@@ -1,28 +1,32 @@
 package uth.edu.vn.ccmarket.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.UUID;
 
+@Entity
 public class CarbonCredit {
-    private String creditId;
-    private String ownerId;
-    private double quantity; // in tonnes CO2e (1 credit = 1 tonne)
-    private LocalDate issuedDate;
-    private boolean verified;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private Long ownerId;
+    private double quantity;
+    private boolean verified = false;
+    private LocalDate issuedAt = LocalDate.now();
 
-    public CarbonCredit(String ownerId, double quantity) {
-        this.creditId = "CC-" + UUID.randomUUID().toString().substring(0, 8);
+    public CarbonCredit() {
+    }
+
+    public CarbonCredit(Long ownerId, double quantity) {
         this.ownerId = ownerId;
         this.quantity = quantity;
-        this.issuedDate = LocalDate.now();
-        this.verified = false;
     }
 
-    public String getCreditId() {
-        return creditId;
+    // getters/setters
+    public Long getId() {
+        return id;
     }
 
-    public String getOwnerId() {
+    public Long getOwnerId() {
         return ownerId;
     }
 
@@ -30,21 +34,11 @@ public class CarbonCredit {
         return quantity;
     }
 
-    public LocalDate getIssuedDate() {
-        return issuedDate;
-    }
-
     public boolean isVerified() {
         return verified;
     }
 
-    public void setVerified(boolean verified) {
-        this.verified = verified;
-    }
-
-    @Override
-    public String toString() {
-        return "CarbonCredit{" + "creditId='" + creditId + '\'' + ", ownerId='" + ownerId + '\'' + ", quantity="
-                + quantity + ", verified=" + verified + '}';
+    public void setVerified(boolean v) {
+        this.verified = v;
     }
 }
