@@ -4,41 +4,12 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "carbon_credit")
 public class CarbonCredit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long ownerId;
-    private double quantity;
-    private boolean verified = false;
-    private LocalDate issuedAt = LocalDate.now();
-
-    public CarbonCredit() {
-    }
-
-    public CarbonCredit(Long ownerId, double quantity) {
-        this.ownerId = ownerId;
-        this.quantity = quantity;
-    }
-
-    // getters/setters
-    public Long getId() {
-        return id;
-    }
-
-    public Long getOwnerId() {
-        return ownerId;
-    }
-
-    public double getQuantity() {
-        return quantity;
-    }
-
-    public boolean isVerified() {
-        return verified;
-    }
-
-    public void setVerified(boolean v) {
-        this.verified = v;
-    }
+    @ManyToOne(fetch = FetchType.LAZY) // nhiều tín chỉ - 1 chủ xe
+    @JoinColumn(name = "owner_id", nullable = false)
+    private EVOwner owner;
 }
