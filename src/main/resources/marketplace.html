@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Marketplace</title></head>
+<body>
+<h1>Marketplace</h1>
+<p><a th:href="@{/login}">Login</a> | <a th:href="@{/register}">Register</a> | <a th:href="@{/dashboard}">Dashboard</a></p>
+<table border="1">
+    <tr><th>ID</th><th>Seller</th><th>Qty (t)</th><th>Price/credit</th></tr>
+    <tr th:each="l : ${listings}">
+        <td th:text="${l.id}">1</td>
+        <td th:text="${l.sellerOwnerId}">seller</td>
+        <td th:text="${l.quantity}">0.1</td>
+        <td th:text="${l.pricePerCredit}">10</td>
+    </tr>
+</table>
+</body>
+</html>
