@@ -25,6 +25,9 @@ public class EVOwner {
     @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - 1 ví
     private Wallet wallet;
 
+    public EVOwner() {
+    }
+
     public EVOwner(String username, String password, String email) {
         this.username = username;
         this.password = password;
@@ -77,6 +80,36 @@ public class EVOwner {
 
     public void setCreditBalance(double creditBalance) {
         this.creditBalance = creditBalance;
+    }
+
+    public void depositCredits(double q) {
+        if (q > 0)
+            this.creditBalance += q;
+    }
+
+    public boolean withdrawCredits(double q) {
+        if (q <= 0)
+            return false;
+        if (q <= this.creditBalance) {
+            this.creditBalance -= q;
+            return true;
+        }
+        return false;
+    }
+
+    public void depositCash(double v) {
+        if (v > 0)
+            this.cashBalance += v;
+    }
+
+    public boolean withdrawCash(double v) {
+        if (v <= 0)
+            return false;
+        if (v <= this.cashBalance) {
+            this.cashBalance -= v;
+            return true;
+        }
+        return false;
     }
 
 }
