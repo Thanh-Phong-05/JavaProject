@@ -19,4 +19,23 @@ public class TripProcessorService {
         return distanceKm * CO2_CHANGE;
     }
 
+    public List<Trip> loadTripsFromFile(String filePath, EVOwner owner) throws IOException {
+        List<Trip> trips = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                double distance = Double.parseDouble(parts[0]);
+                double energy = Double.parseDouble(parts[1]);
+                LocalDate date = LocalDate.parse(parts[2]);
+                Trip trip = new Trip();
+                trip.setDistanceKm(distance);
+                trip.setEnergyConsumedKWh(energy);
+                trip.setDate(date);
+                trip.setOwner(owner);
+                trips.add(trip);
+            }
+        }
+        return trips;
+    }
 }
