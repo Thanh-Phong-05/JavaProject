@@ -12,13 +12,20 @@ public class Trip {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private LocalDate date;
-    private double distanceKm;
-    private double energyConsumedKWh;
+    private LocalDate date;// ngày đi
+    private double distanceKm; // quãng đường (km)
+    private double energyConsumedKWh;// tiêu thụ (kWh)
 
-    @ManyToOne
+    @ManyToOne // 1 chủ xe - nhiều chuyến
     @JoinColumn(name = "owner_id")
     private EVOwner owner;
+
+    public Trip(double distanceKm, double energyConsumedKWh, LocalDate date, EVOwner owner) {
+        this.distanceKm = distanceKm;
+        this.energyConsumedKWh = energyConsumedKWh;
+        this.date = date;
+        this.owner = owner;
+    }
 
     public Long getId() {
         return id;
