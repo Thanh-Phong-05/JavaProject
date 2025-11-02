@@ -18,4 +18,11 @@ public class EVOwner {
 
     double cashBalance = 0.0; // tiền mặt
     double creditBalance = 0.0; // tín chỉ
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    private List<Trip> trips = new ArrayList<>();
+
+    @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL)
+    private Wallet wallet;
+
 }
