@@ -2,25 +2,13 @@ package uth.edu.vn.ccmarket.model;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 public class Trip {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private LocalDate date;
-    private double distanceKm;
-
-    public Trip(LocalDate date, double distanceKm) {
-        this.date = date;
-        this.distanceKm = distanceKm;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public double getDistanceKm() {
-        return distanceKm;
-    }
-
-    @Override
-    public String toString() {
-        return "Trip{" + "date=" + date + ", distanceKm=" + distanceKm + '}';
-    }
 }
