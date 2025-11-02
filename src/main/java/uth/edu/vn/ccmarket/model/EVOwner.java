@@ -1,51 +1,81 @@
 package uth.edu.vn.ccmarket.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "ev_owner")
 public class EVOwner {
-    private String ownerId;
-    private String name;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true)
+    private String username;
+    private String password;
     private String email;
-    private Wallet wallet;
-    private List<CarbonCredit> credits;
 
-    public EVOwner(String name, String email) {
-        this.ownerId = UUID.randomUUID().toString();
-        this.name = name;
+    private double cashBalance = 0.0;
+    private double creditBalance = 0.0;
+
+    public EVOwner() {
+    }
+
+    public EVOwner(String username, String password, String email) {
+        this.username = username;
+        this.password = password;
         this.email = email;
-        this.wallet = new Wallet(this.ownerId);
-        this.credits = new ArrayList<>();
     }
 
-    public String getOwnerId() {
-        return ownerId;
+    // getters & setters
+    public Long getId() {
+        return id;
     }
 
-    public String getName() {
-        return name;
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String u) {
+        this.username = u;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String p) {
+        this.password = p;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public Wallet getWallet() {
-        return wallet;
+    public void setEmail(String e) {
+        this.email = e;
     }
 
-    public List<CarbonCredit> getCredits() {
-        return credits;
+    public double getCashBalance() {
+        return cashBalance;
     }
 
-    public void addCredit(CarbonCredit c) {
-        credits.add(c);
-        wallet.depositCredits(c.getQuantity());
+    public void depositCash(double v) {
+        this.cashBalance += v;
     }
 
-    @Override
-    public String toString() {
-        return "EVOwner{" + "ownerId='" + ownerId + '\'' + ", name='" + name + '\'' + ", email='" + email + '\'' + '}';
+    public double getCreditBalance() {
+        return creditBalance;
+    }
+
+    public void depositCredits(double q) {
+        this.creditBalance += q;
+    }
+
+    public boolean withdrawCredits(double q) {
+        if (q <= creditBalance) {
+            creditBalance -= q;
+            return true;
+        }
+        return false;
     }
 }
