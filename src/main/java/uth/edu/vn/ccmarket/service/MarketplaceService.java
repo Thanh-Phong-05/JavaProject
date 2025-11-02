@@ -1,85 +1,63 @@
 package uth.edu.vn.ccmarket.service;
 
-import uth.edu.vn.ccmarket.model.CarbonCredit;
-import uth.edu.vn.ccmarket.model.CCBuyer;
-import uth.edu.vn.ccmarket.model.EVOwner;
-import uth.edu.vn.ccmarket.model.Listing;
-import uth.edu.vn.ccmarket.model.Transaction;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uth.edu.vn.ccmarket.model.*;
+import uth.edu.vn.ccmarket.repository.*;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
+@Service
 public class MarketplaceService {
+    private final ListingRepository listingRepo;
+    private final CarbonCreditRepository creditRepo;
+    private final EVOwnerRepository ownerRepo;
+    private final TransactionRepository txRepo;
 
-    // in-memory stores
-    private Map<String, CarbonCredit> creditStore = new HashMap<>();
-    private Map<String, Listing> listingStore = new HashMap<>();
-    private Map<String, Transaction> txStore = new HashMap<>();
-    private List<Transaction> completedTransactions = new ArrayList<>();
-
-    private TransactionService transactionService;
-    private PriceSuggestionService priceSuggestionService;
-
-    public MarketplaceService(TransactionService transactionService, PriceSuggestionService priceSuggestionService) {
-        this.transactionService = transactionService;
-        this.priceSuggestionService = priceSuggestionService;
+    public MarketplaceService(ListingRepository listingRepo, CarbonCreditRepository creditRepo,
+            EVOwnerRepository ownerRepo, TransactionRepository txRepo) {
+        this.listingRepo = listingRepo;
+        this.creditRepo = creditRepo;
+        this.ownerRepo = ownerRepo;
+        this.txRepo = txRepo;
     }
 
-    public void registerCredit(CarbonCredit cc) {
-        creditStore.put(cc.getCreditId(), cc);
-    }
-
-    public Listing createListing(CarbonCredit cc, EVOwner seller, double qty, Listing.Type type,
-            double pricePerCredit) {
+    public Listing createListing(CarbonCredit cc, EVOwner seller, double qty, double pricePerCredit) {
         if (!cc.isVerified())
             throw new IllegalStateException("Credit not verified");
         if (qty > cc.getQuantity())
-            throw new IllegalArgumentException("Not enough credit quantity");
-        if (!seller.getWallet().withdrawCredits(qty))
-            throw new IllegalStateException("Seller wallet insufficient credits");
-
-        Listing l = new Listing(cc.getCreditId(), seller.getOwnerId(), qty, type, pricePerCredit);
-        listingStore.put(l.getListingId(), l);
-        System.out.println("Listing created: " + l);
-        return l;
+            throw new IllegalArgumentException("Not enough credit");
+        if (!seller.withdrawCredits(qty))
+            throw new IllegalStateException("Insufficient credits");
+        Listing l = new Listing(cc.getId(), seller.getId(), qty, pricePerCredit);
+        return listingRepo.save(l);
     }
 
-    public List<Listing> searchListings(Double minQty, Double maxPrice) {
-        return listingStore.values().stream().filter(Listing::isActive)
-                .filter(l -> (minQty == null || l.getQuantity() >= minQty)
-                        && (maxPrice == null || l.getPricePerCredit() <= maxPrice))
-                .collect(Collectors.toList());
+    @Transactional
+    public Transaction buyListing(Long listingId, Long buyerId) {
+        Listing l = listingRepo.findById(listingId).orElseThrow();
+        if (!l.isActive())
+            throw new IllegalStateException("inactive");
+        EVOwner buyer = ownerRepo.findById(buyerId).orElseThrow();
+        EVOwner seller = ownerRepo.findById(l.getSellerOwnerId()).orElseThrow();
+        double total = l.getQuantity() * l.getPricePerCredit();
+        if (buyer.getCashBalance() < total)
+            throw new IllegalStateException("buyer not enough cash");
+        buyer.depositCash(-total);
+        seller.depositCash(total);
+        l.setActive(false);
+        listingRepo.save(l);
+        Transaction tx = new Transaction();
+        tx.setBuyerId(buyerId);
+        tx.setSellerId(seller.getId());
+        tx.setListingId(l.getId());
+        tx.setQuantity(l.getQuantity());
+        tx.setTotalPrice(total);
+        tx.setStatus("COMPLETED");
+        return txRepo.save(tx);
     }
 
-    public Transaction buyFixedPrice(CCBuyer buyer, Listing listing) {
-        if (!listing.isActive())
-            throw new IllegalStateException("Listing not active");
-        double total = listing.getQuantity() * listing.getPricePerCredit();
-        if (!buyer.getWallet().withdrawCash(total))
-            throw new IllegalStateException("Buyer has insufficient cash");
-        Transaction tx = new Transaction(buyer.getBuyerId(), listing.getSellerOwnerId(), listing.getListingId(),
-                listing.getQuantity(), total);
-        tx.setStatus(Transaction.Status.COMPLETED);
-        listing.setActive(false);
-        // Transfer cash to seller wallet (in real system via payment gateway)
-        // For demo: simulate seller deposit by exposing seller wallet externally
-        // through TransactionService
-        transactionService.processCompletedTransaction(tx);
-        txStore.put(tx.getTxId(), tx);
-        completedTransactions.add(tx);
-        System.out.println("Transaction completed: " + tx);
-        return tx;
-    }
-
-    public void registerTransaction(Transaction tx) {
-        txStore.put(tx.getTxId(), tx);
-    }
-
-    public List<Transaction> getCompletedTransactions() {
-        return completedTransactions;
-    }
-
-    public PriceSuggestionService getPriceSuggestionService() {
-        return priceSuggestionService;
+    public List<Listing> findActiveListings() {
+        return listingRepo.findByActiveTrue();
     }
 }
