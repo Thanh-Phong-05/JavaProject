@@ -1,10 +1,9 @@
 package uth.edu.vn.ccmarket.service;
 
 import uth.edu.vn.ccmarket.model.*;
-import uth.edu.vn.ccmarket.repository.CarbonCreditRepository;
+import uth.edu.vn.ccmarket.repository.*;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,9 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TripProcessorService {
@@ -64,21 +60,10 @@ public class TripProcessorService {
         double tonnes = savedKg / 1000.0;// đổi ra tấn CO2
         if (tonnes <= 0)
             throw new IllegalArgumentException("No credit generated");
-        CarbonCredit cc = new CarbonCredit(owner.getId(), tonnes);// tạo tín chỉ cacbon
+        CarbonCredit cc = new CarbonCredit(owner, tonnes);// tạo tín chỉ cacbon
         cc.setVerified(false);// chưa xác minh
         creditRepo.save(cc);// lưu tín chỉ cacbon
         return cc;
-    }
-
-    @PostMapping("/uploadTrips")
-    public String uploadTrips(@RequestParam("file") MultipartFile file, @AuthenticationPrincipal User user)
-            throws Exception {
-        EVOwner owner = ownerRepo.findByUsername(user.getUsername()).orElseThrow();// lấy chủ xe từ user đăng nhập
-        List<Trip> trips = tripProcessorService.parseTripsCsv(file.getInputStream(), owner);// đọc file CSV
-        CarbonCredit cc = tripProcessorService.createCreditFromTrips(owner, trips);// tạo tín chỉ cacbon
-        owner.depositCredits(cc.getQuantity());// nạp dô ví
-        ownerRepo.save(owner);// câp nhập lại
-        return "redirect:/dashboard";
     }
 
 }
