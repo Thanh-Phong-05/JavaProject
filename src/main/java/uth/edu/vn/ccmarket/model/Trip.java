@@ -11,4 +11,7 @@ public class Trip {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDate date;
+    private double distanceKm; // in kilometers
+    private double energyConsumedKWh; // in kWh
+
 }
