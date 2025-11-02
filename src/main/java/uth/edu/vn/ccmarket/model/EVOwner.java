@@ -11,19 +11,25 @@ public class EVOwner {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true)
+    @Column(unique = true) // tránh trùng tên đăng nhập
     private String username;
     private String password;
-    private String email;
+    private String email; // mục đích để xác minh hoặc tạo mk mới
 
-    double cashBalance = 0.0; // tiền mặt
-    double creditBalance = 0.0; // tín chỉ
+    double cashBalance = 0.0; // tiền mặt sau khi bán tín chỉ cacbon
+    double creditBalance = 0.0; // tín chỉ đổi từ CO2 tiết kiệm
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - nhiều chuyến
     private List<Trip> trips = new ArrayList<>();
 
-    @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - 1 ví
     private Wallet wallet;
+
+    public EVOwner(String username, String password, String email) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+    }
 
     public Long getId() {
         return id;
