@@ -25,6 +25,13 @@ public class CarbonCredit {
         this.issuedAt = issuedAt;
     }
 
+    public CarbonCredit(EVOwner owner, double quantity) {
+        this.owner = owner;
+        this.quantity = quantity;
+        this.issuedAt = LocalDate.now();
+        this.verified = false;
+    }
+
     public Long getId() {
         return id;
     }
