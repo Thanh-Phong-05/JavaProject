@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Dashboard</title></head>
+<body>
+<h1>Dashboard - <span th:text="${me.username}">user</span></h1>
+<p>Cash: <span th:text="${me.cashBalance}">0</span> | Credits: <span th:text="${me.creditBalance}">0</span></p>
+
+<h3>Create credit from total km (demo)</h3>
+<form th:action="@{/uploadKm}" method="post">
+    <label>Total km: <input name="km" type="number" step="0.1"/></label>
+    <button type="submit">Create Credit</button>
+</form>
+
+<h3>Your Credits</h3>
+<table border="1">
+    <tr><th>ID</th><th>Qty</th><th>Verified</th><th>Action</th></tr>
+    <tr th:each="c : ${credits}">
+        <td th:text="${c.id}">1</td>
+        <td th:text="${c.quantity}">0.02</td>
+        <td th:text="${c.verified}">false</td>
+        <td>
+            <form th:action="@{/verifyCredit}" method="post" style="display:inline">
+                <input type="hidden" name="creditId" th:value="${c.id}"/>
+                <button type="submit">Verify (CVA)</button>
+            </form>
+            <form th:action="@{/createListing}" method="post" style="display:inline">
+                <input type="hidden" name="creditId" th:value="${c.id}"/>
+                <input name="qty" type="number" step="0.0001" placeholder="qty"/>
+                <input name="price" type="number" step="0.01" placeholder="price"/>
+                <button type="submit">Create Listing</button>
+            </form>
+        </td>
+    </tr>
+</table>
+
+<p><a th:href="@{/marketplace}">Marketplace</a> | <a th:href="@{/logout}">Logout</a></p>
+</body>
+</html>
