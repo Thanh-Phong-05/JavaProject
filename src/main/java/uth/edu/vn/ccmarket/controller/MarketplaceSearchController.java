@@ -1,47 +1,33 @@
 package uth.edu.vn.ccmarket.controller;
 
+import uth.edu.vn.ccmarket.model.Listing;
+import uth.edu.vn.ccmarket.repository.ListingRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
-import uth.edu.vn.ccmarket.service.MarketplaceService;
+import java.util.List;
 
+/**
+ * (1) Controller này xử lý việc HIỂN THỊ và TÌM KIẾM
+ * trên trang marketplace công khai.
+ */
 @Controller
-@RequestMapping("/marketplace")
 public class MarketplaceSearchController {
 
-    private final MarketplaceService marketplace;
-    private final EVOwnerRepository ownerRepo;
+    private final ListingRepository listingRepo;
 
-    public MarketplaceSearchController(MarketplaceService marketplace, EVOwnerRepository ownerRepo) {
-        this.marketplace = marketplace;
-        this.ownerRepo = ownerRepo;
+    public MarketplaceSearchController(ListingRepository listingRepo) {
+        this.listingRepo = listingRepo;
     }
 
-    @GetMapping("/search")
-    public String search(
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Double minQty,
-            @RequestParam(required = false) Double maxQty,
-            @RequestParam(required = false) String region,
-            Model model) {
+    @GetMapping("/marketplace")
+    public String showMarketplace(Model model) {
 
-        // Dùng hàm có sẵn trong MarketplaceService (đã tối ưu)
-        var filtered = marketplace.searchActive(minPrice, maxPrice, minQty, maxQty, region);
+        List<Listing> listings = listingRepo.findByActive(true);
 
-        model.addAttribute("listings", filtered);
+        model.addAttribute("listings", listings);
 
-        // Giữ lại các giá trị filter trong form
-        model.addAttribute("minPrice", minPrice);
-        model.addAttribute("maxPrice", maxPrice);
-        model.addAttribute("minQty", minQty);
-        model.addAttribute("maxQty", maxQty);
-        model.addAttribute("region", region);
-
-        return "marketplace"; // view hiển thị listings
+        return "marketplace";
     }
 }
