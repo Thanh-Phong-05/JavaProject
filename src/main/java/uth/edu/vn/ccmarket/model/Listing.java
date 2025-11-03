@@ -23,7 +23,6 @@ public class Listing {
         this.pricePerCredit = pricePerCredit;
     }
 
-    // getters/setters...
     public Long getId() {
         return id;
     }
@@ -42,6 +41,30 @@ public class Listing {
 
     public boolean isActive() {
         return active;
+    }
+
+    public Long getCreditId() {
+        return creditId;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setCreditId(Long creditId) {
+        this.creditId = creditId;
+    }
+
+    public void setSellerOwnerId(Long sellerOwnerId) {
+        this.sellerOwnerId = sellerOwnerId;
+    }
+
+    public void setQuantity(double quantity) {
+        this.quantity = quantity;
+    }
+
+    public void setPricePerCredit(double pricePerCredit) {
+        this.pricePerCredit = pricePerCredit;
     }
 
     public void setActive(boolean a) {
