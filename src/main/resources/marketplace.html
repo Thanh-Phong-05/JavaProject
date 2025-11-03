@@ -31,8 +31,17 @@
                 <td th:text="${listing.quantity}">50.0</td>
                 <td th:text="${#numbers.formatCurrency(listing.pricePerCredit)}">1,000,000</td>
                 <td>
-                    <a href="#">Mua</a>
-                </td>
+                  <form th:action="@{/buy}" method="POST">
+                
+                    <input type="hidden" name="listingId" th:value="${listing.id}" />
+                    
+                    <input type="number" name="quantity" step="0.01" min="0.01" 
+                          th:max="${listing.quantity}" required 
+                          style="width: 70px;" />
+                    
+                    <button type="submit">Mua</button>
+                </form>
+            </td>
             </tr>
             <tr th:if="${listings.isEmpty()}">
                 <td colspan="5" style="text-align: center;">Hiện chưa có ai rao bán tín chỉ.</td>
