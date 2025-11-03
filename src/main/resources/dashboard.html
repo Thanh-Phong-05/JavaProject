@@ -9,6 +9,8 @@
         th, td { border: 1px solid #ddd; padding: 8px; }
         th { background-color: #f2f2f2; }
         .wallet, .report { background-color: #f9f9f9; padding: 15px; border-radius: 5px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -26,6 +28,25 @@
             Số dư tiền mặt (Cash):
             <strong th:text="${#numbers.formatCurrency(owner.cashBalance)}">0</strong> VND
         </p>
+    </div>
+
+    <div>
+        <h2>Đồng bộ hành trình (Upload CSV)</h2>
+        
+        <div th:if="${message}" 
+             th:class="${#strings.contains(message, 'thất bại') ? 'error' : 'success'}"
+             th:text="${message}">
+            </div>
+
+        <form method="POST" th:action="@{/trips/upload}" enctype="multipart/form-data">
+            <p>
+                Chọn file CSV hành trình của bạn:
+                <input type="file" name="file" accept=".csv" required>
+            </p>
+            <p>
+                <button type="submit">Tải lên và xử lý</button>
+            </p>
+        </form>
     </div>
 
     <div class="report">
