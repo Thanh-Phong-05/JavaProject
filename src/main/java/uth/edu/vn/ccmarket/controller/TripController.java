@@ -34,7 +34,7 @@ public class TripController {
             @AuthenticationPrincipal UserDetails userDetails, // (5) Lấy người dùng đang login
             RedirectAttributes redirectAttributes) { // (6)
 
-        EVOwner owner = ownerRepo.findByUsername(userDetails.getUsername());
+        EVOwner owner = ownerRepo.findByUsername(userDetails.getUsername()).orElse(null);
         if (owner == null) {
 
             redirectAttributes.addFlashAttribute("message", "Lỗi: Không tìm thấy người dùng!");
