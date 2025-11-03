@@ -22,9 +22,6 @@ public class EVOwner {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - nhiều chuyến
     private List<Trip> trips = new ArrayList<>();
 
-    @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - 1 ví
-    private Wallet wallet;
-
     public EVOwner() {
     }
 
