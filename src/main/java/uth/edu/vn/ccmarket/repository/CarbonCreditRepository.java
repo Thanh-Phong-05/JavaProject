@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long> {
     List<CarbonCredit> findByOwnerId(Long ownerId);
+
+    List<CarbonCredit> findByVerified(boolean verified);
 }
