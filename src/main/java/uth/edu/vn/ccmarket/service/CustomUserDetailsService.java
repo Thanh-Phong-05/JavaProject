@@ -22,11 +22,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        EVOwner owner = evOwnerRepository.findByUsername(username);
+        EVOwner owner = evOwnerRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        if (owner == null) {
-            throw new UsernameNotFoundException("Không tìm thấy người dùng: " + username);
-        }
         return new User(
                 owner.getUsername(),
                 owner.getPassword(),
