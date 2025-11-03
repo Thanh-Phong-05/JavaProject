@@ -35,7 +35,7 @@ public class DashboardController {
     public String showDashboard(Model model,
             @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
-        EVOwner owner = ownerRepo.findByUsername(username);
+        EVOwner owner = ownerRepo.findByUsername(username).orElse(null);
 
         if (owner == null) {
             return "redirect:/";
