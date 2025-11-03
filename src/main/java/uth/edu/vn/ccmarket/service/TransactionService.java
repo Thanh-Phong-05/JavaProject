@@ -1,37 +1,82 @@
 package uth.edu.vn.ccmarket.service;
 
-import uth.edu.vn.ccmarket.model.CCBuyer;
 import uth.edu.vn.ccmarket.model.EVOwner;
+import uth.edu.vn.ccmarket.model.Listing;
 import uth.edu.vn.ccmarket.model.Transaction;
+import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
+import uth.edu.vn.ccmarket.repository.ListingRepository;
+import uth.edu.vn.ccmarket.repository.TransactionRepository;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // (1) Import phép thuật
 
-/**
- * Simple mapping to deposit funds to seller: in real world we'd have user repo.
- * For demo we'll register EVOwner and CCBuyer here.
- */
+@Service
 public class TransactionService {
 
-    private Map<String, EVOwner> owners = new HashMap<>();
-    private Map<String, CCBuyer> buyers = new HashMap<>();
+    private final ListingRepository listingRepo;
+    private final EVOwnerRepository ownerRepo;
+    private final TransactionRepository transactionRepo;
 
-    public void registerOwner(EVOwner owner) {
-        owners.put(owner.getOwnerId(), owner);
+    public TransactionService(ListingRepository listingRepo, EVOwnerRepository ownerRepo,
+            TransactionRepository transactionRepo) {
+        this.listingRepo = listingRepo;
+        this.ownerRepo = ownerRepo;
+        this.transactionRepo = transactionRepo;
     }
 
-    public void registerBuyer(CCBuyer buyer) {
-        buyers.put(buyer.getBuyerId(), buyer);
-    }
+    @Transactional
+    public void executeBuyTransaction(Long listingId, double quantity, EVOwner buyer) {
 
-    public void processCompletedTransaction(Transaction tx) {
-        // deposit cash to seller wallet
-        EVOwner seller = owners.get(tx.getSellerId());
-        if (seller != null) {
-            seller.getWallet().depositCash(tx.getTotalPrice());
-        } else {
-            System.out.println("Seller not found for tx: " + tx.getTxId());
+        // Lấy rao bántừ db
+        Listing listing = listingRepo.findById(listingId)
+                .orElseThrow(() -> new RuntimeException("Rao bán không tồn tại."));
+
+        // người mua (chủ xe)
+        EVOwner seller = ownerRepo.findById(listing.getSellerOwnerId())
+                .orElseThrow(() -> new RuntimeException("Người bán không tồn tại."));
+
+        if (!listing.isActive()) {
+            throw new RuntimeException("Rao bán này đã kết thúc.");
         }
-        // For buyer we already withdrew cash
+        if (listing.getQuantity() < quantity) {
+            throw new RuntimeException("Số lượng không đủ, chỉ còn " + listing.getQuantity());
+        }
+
+        if (buyer.getId().equals(seller.getId())) {
+            throw new RuntimeException("Bạn không thể tự mua tín chỉ của chính mình.");
+        }
+
+        double totalPrice = listing.getPricePerCredit() * quantity;
+        if (buyer.getCashBalance() < totalPrice) {
+            throw new RuntimeException("Bạn không đủ tiền (Cần " + totalPrice + " VND).");
+        }
+
+        // gd trừ tiền người mua
+        buyer.withdrawCash(totalPrice);
+        // cộng tín chỉ cho người mua
+        buyer.depositCredits(quantity);
+
+        // cộng tiền cho người bán
+        seller.depositCash(totalPrice);
+
+        // cập nhật lại rao bán (trừ số lượng)
+        listing.setQuantity(listing.getQuantity() - quantity);
+        if (listing.getQuantity() == 0) {
+            listing.setActive(false);
+        }
+
+        // lịch sử giao dịch
+        Transaction receipt = new Transaction();
+        receipt.setBuyerId(buyer.getId());
+        receipt.setSellerId(seller.getId());
+        receipt.setListingId(listingId);
+        receipt.setQuantity(quantity);
+        receipt.setTotalPrice(totalPrice);
+        receipt.setStatus("COMPLETED");
+
+        ownerRepo.save(buyer);
+        ownerRepo.save(seller);
+        listingRepo.save(listing);
+        transactionRepo.save(receipt);
     }
 }
