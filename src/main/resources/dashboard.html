@@ -49,6 +49,24 @@
         </form>
     </div>
 
+    <div>
+        <h2>Niêm yết Tín chỉ Carbon để bán</h2>
+        
+        <form method="POST" th:action="@{/listings/create}">
+            <p>
+                Số lượng bán:
+                <input type="number" step="0.01" name="quantity" required>
+            </p>
+            <p>
+                Giá mỗi tín chỉ (VND):
+                <input type="number" step="1000" name="price" required>
+            </p>
+            <p>
+                <button type="submit">Đăng bán</button>
+            </p>
+        </form>
+    </div>
+
     <div class="report">
         <h2>Báo cáo cá nhân</h2>
         <p>
