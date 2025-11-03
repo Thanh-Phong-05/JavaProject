@@ -1,8 +1,5 @@
 package uth.edu.vn.ccmarket.service;
 
-import uth.edu.vn.ccmarket.model.*;
-import uth.edu.vn.ccmarket.repository.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,58 +9,167 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import uth.edu.vn.ccmarket.model.CarbonCredit;
+import uth.edu.vn.ccmarket.model.EVOwner;
+import uth.edu.vn.ccmarket.model.Trip;
+import uth.edu.vn.ccmarket.repository.CarbonCreditRepository;
+import uth.edu.vn.ccmarket.repository.TripRepository;
+
+/**
+ * Hỗ trợ 2 format hàng dữ liệu:
+ *   A) distanceKm,energy,date(YYYY-MM-DD)
+ *   B) date(YYYY-MM-DD),distanceKm,energy
+ * Tự bỏ qua header nếu dòng đầu có chữ (non-digit).
+ */
 @Service
 public class TripProcessorService {
-    private static final double ICE_EMISSION_KG_PER_KM = 0.25; // xe xăng thải 0.25 kg CO2/km
-    private static final double EV_EMISSION_KG_PER_KM = 0.05; // xe điện thải 0.05 kg CO2/km
-    // 1 carbon credit = 1000 kg CO2
+
+    // Giả định tiết kiệm CO2 so với ICE: 0.25 - 0.05 = 0.20 kg/km
+    private static final double SAVED_KG_PER_KM = 0.20;     // kg CO2/km
+    private static final double KG_PER_TONNE    = 1000.0;   // 1 credit = 1 tCO2e (demo)
 
     private final TripRepository tripRepo;
-    private final CarbonCreditRepository creditRepo; // lưu Trip và CarbonCredit
+    private final CarbonCreditRepository creditRepo;
 
     public TripProcessorService(TripRepository tripRepo, CarbonCreditRepository creditRepo) {
         this.tripRepo = tripRepo;
         this.creditRepo = creditRepo;
     }
 
-    public List<Trip> parseTripsCsv(InputStream csvInput, EVOwner owner) throws Exception {
+    @Transactional
+    public List<Trip> parseTripsCsv(InputStream csvInput, EVOwner owner) throws IOException {
         List<Trip> trips = new ArrayList<>();
+
         try (BufferedReader br = new BufferedReader(new InputStreamReader(csvInput))) {
             String line;
             boolean first = true;
             while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                // Bỏ qua header: dòng đầu mà không bắt đầu bằng số
                 if (first) {
                     first = false;
+                    if (!startsWithDigit(line)) {
+                        // header -> skip
+                        continue;
+                    }
+                }
+
+                String[] parts = line.split(",");
+                if (parts.length == 0) continue;
+
+                // Chuẩn hóa & validate
+                for (int i = 0; i < parts.length; i++) parts[i] = parts[i].trim();
+                // Cố gắng đọc theo 2 format
+                Trip t = parseRowFlexible(parts, owner);
+                if (t == null) {
+                    // throw new IllegalArgumentException("CSV row invalid: " + line);
                     continue;
                 }
-                if (line.trim().isEmpty())
-                    continue;
-                String[] parts = line.split(",");
-                double distanceKm = Double.parseDouble(parts[0].trim());
-                double energy = parts.length > 1 && !parts[1].trim().isEmpty() ? Double.parseDouble(parts[1].trim())
-                        : 0.0;
-                LocalDate date = parts.length > 2 && !parts[2].trim().isEmpty() ? LocalDate.parse(parts[2].trim())
-                        : LocalDate.now();
-                Trip t = new Trip(distanceKm, energy, date, owner);
+                // Validate distance
+                if (t.getDistanceKm() < 0) continue;
+
                 trips.add(t);
             }
-        } catch (IOException e) {
-            throw new Exception("Error reading CSV file", e);
+        }
+
+        if (trips.isEmpty()) {
+            return List.of();
         }
         return tripRepo.saveAll(trips);
     }
 
-    public CarbonCredit createCreditFromTrips(EVOwner owner, List<Trip> trips) {
-        double totalDistance = trips.stream().mapToDouble(Trip::getDistanceKm).sum();// tổng km đã đi
-        double savedKg = totalDistance * (ICE_EMISSION_KG_PER_KM - EV_EMISSION_KG_PER_KM);// kg CO2 đã tiết kiệm
-        double tonnes = savedKg / 1000.0;// đổi ra tấn CO2
-        if (tonnes <= 0)
-            throw new IllegalArgumentException("No credit generated");
-        CarbonCredit cc = new CarbonCredit(owner, tonnes);// tạo tín chỉ cacbon
-        cc.setVerified(false);// chưa xác minh
-        creditRepo.save(cc);// lưu tín chỉ cacbon
-        return cc;
+    /**
+     * Tạo tín chỉ từ tất cả Trip của 1 owner trong DB (không cần list truyền vào).
+     */
+    @Transactional
+    public CarbonCredit createCreditFromTrips(EVOwner owner) {
+        List<Trip> all = tripRepo.findByOwnerId(owner.getId());
+        double totalKm = all.stream().mapToDouble(Trip::getDistanceKm).sum();
+        double savedKg = totalKm * SAVED_KG_PER_KM;
+        double tonnes = savedKg / KG_PER_TONNE;
+
+        if (tonnes <= 0) {
+            throw new IllegalArgumentException("Không đủ dữ liệu để tạo tín chỉ (tonnes <= 0)");
+        }
+
+        CarbonCredit cc = new CarbonCredit(owner, tonnes);
+        cc.setVerified(false);
+        // nếu bạn có field issuedAt dạng LocalDate trong CarbonCredit:
+        // cc.setIssuedAt(LocalDate.now());
+        return creditRepo.save(cc);
     }
 
+    // ---------- helpers ----------
+
+    private static boolean startsWithDigit(String s) {
+        char c = s.charAt(0);
+        return c >= '0' && c <= '9';
+    }
+
+    /**
+     * Hỗ trợ 2 format:
+     *   A) distanceKm, energy, date
+     *   B) date, distanceKm, energy
+     */
+    private Trip parseRowFlexible(String[] parts, EVOwner owner) {
+        try {
+            if (parts.length >= 3) {
+                // Nếu parts[0] giống yyyy-mm-dd => format B
+                if (looksLikeDate(parts[0])) {
+                    LocalDate date = LocalDate.parse(parts[0]);
+                    double distanceKm = parseDoubleSafe(parts[1]);
+                    double energy = parseOptionalDouble(parts, 2);
+                    return new Trip(distanceKm, energy, date, owner);
+                } else {
+                    // format A
+                    double distanceKm = parseDoubleSafe(parts[0]);
+                    double energy = parseOptionalDouble(parts, 1);
+                    LocalDate date = looksLikeDate(parts[2]) ? LocalDate.parse(parts[2]) : LocalDate.now();
+                    return new Trip(distanceKm, energy, date, owner);
+                }
+            } else if (parts.length == 2) {
+                // Cặp (date, distance) hoặc (distance, date)
+                if (looksLikeDate(parts[0])) {
+                    LocalDate date = LocalDate.parse(parts[0]);
+                    double distanceKm = parseDoubleSafe(parts[1]);
+                    return new Trip(distanceKm, 0.0, date, owner);
+                } else if (looksLikeDate(parts[1])) {
+                    double distanceKm = parseDoubleSafe(parts[0]);
+                    LocalDate date = LocalDate.parse(parts[1]);
+                    return new Trip(distanceKm, 0.0, date, owner);
+                } else {
+                    // Không nhận dạng được -> bỏ qua
+                    return null;
+                }
+            } else if (parts.length == 1) {
+                // Chỉ mỗi distance -> dùng today
+                double distanceKm = parseDoubleSafe(parts[0]);
+                return new Trip(distanceKm, 0.0, LocalDate.now(), owner);
+            }
+        } catch (Exception ignore) {
+            return null;
+        }
+        return null;
+    }
+
+    private static boolean looksLikeDate(String s) {
+        // rất đơn giản: yyyy-mm-dd
+        return s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-';
+    }
+
+    private static double parseDoubleSafe(String s) {
+        if (s == null || s.isBlank()) return 0.0;
+        return Double.parseDouble(s);
+    }
+
+    private static double parseOptionalDouble(String[] parts, int idx) {
+        if (idx < parts.length && !parts[idx].isBlank()) {
+            return parseDoubleSafe(parts[idx]);
+        }
+        return 0.0;
+    }
 }
