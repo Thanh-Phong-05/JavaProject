@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.security.Principal;
 
 @Controller
 public class TransactionController {
@@ -26,17 +27,17 @@ public class TransactionController {
     public String executeBuyTransaction(
             @RequestParam("listingId") Long listingId, // (3) Lấy từ form
             @RequestParam("quantity") double quantity, // (3) Lấy từ form
-            @AuthenticationPrincipal UserDetails userDetails, // (4) Lấy người mua
+            Principal principal, // (4) Lấy người mua
             RedirectAttributes redirectAttributes) {
 
         // đăng nhập để mua
-        if (userDetails == null) {
+        if (principal == null) {
             return "redirect:/login";
         }
 
         try {
             // Lấy thông tin chủ xe
-            EVOwner buyer = ownerRepo.findByUsername(userDetails.getUsername())
+            EVOwner buyer = ownerRepo.findByUsername(principal.getName())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy người mua"));
 
             // Thực hiện giao dịch mua
