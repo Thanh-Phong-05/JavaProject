@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/listings")
@@ -33,10 +34,10 @@ public class MarketplaceController {
     public String createListing(
             @RequestParam("quantity") double quantity,
             @RequestParam("price") double price,
-            @AuthenticationPrincipal UserDetails userDetails, // chủ xe
+            Principal principal, // chủ xe
             RedirectAttributes redirectAttributes) {
 
-        EVOwner owner = ownerRepo.findByUsername(userDetails.getUsername()).orElse(null);
+        EVOwner owner = ownerRepo.findByUsername(principal.getName()).orElse(null);
         if (owner == null) {
             return "redirect:/login"; // không thấy user
         }
