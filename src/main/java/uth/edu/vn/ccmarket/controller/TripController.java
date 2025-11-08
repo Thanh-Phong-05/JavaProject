@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import java.security.Principal;
 import java.util.List;
 
 @Controller
@@ -31,10 +31,10 @@ public class TripController {
     @PostMapping("/upload")
     public String handleFileUpload(
             @RequestParam("file") MultipartFile file, // (4) Lấy file từ form
-            @AuthenticationPrincipal UserDetails userDetails, // (5) Lấy người dùng đang login
+            Principal principal, // (5) Lấy người dùng đang login
             RedirectAttributes redirectAttributes) { // (6)
 
-        EVOwner owner = ownerRepo.findByUsername(userDetails.getUsername()).orElse(null);
+        EVOwner owner = ownerRepo.findByUsername(principal.getName()).orElse(null);
         if (owner == null) {
 
             redirectAttributes.addFlashAttribute("message", "Lỗi: Không tìm thấy người dùng!");
