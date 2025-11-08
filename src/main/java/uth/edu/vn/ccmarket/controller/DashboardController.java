@@ -33,8 +33,8 @@ public class DashboardController {
     // Menu
     @GetMapping("/dashboard")
     public String showDashboard(Model model,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails.getUsername();
+            java.security.Principal principal) {
+        String username = principal.getName();
         EVOwner owner = ownerRepo.findByUsername(username).orElse(null);
 
         if (owner == null) {
