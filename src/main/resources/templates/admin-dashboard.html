@@ -29,8 +29,8 @@
                         <td th:text="${owner.id}">1</td>
                         <td th:text="${owner.username}">user_1</td>
                         <td th:text="${owner.email}">email@example.com</td>
-                        <td th:text="${#numbers.formatDecimal(owner.creditBalance, 1, 2)}">0.00</td>
-                        <td th:text="${#numbers.formatCurrency(owner.cashBalance)}">0</td>
+                        <td th:text="${#numbers.formatDecimal(owner.wallet.creditBalance, 1, 2)}">0.00</td>
+                        <td th:text="${#numbers.formatCurrency(owner.wallet.cashBalance)}">0</td>
                     </tr>
                     <tr th:if="${owners.isEmpty()}">
                         <td colspan="5" class="text-center">Không có người dùng nào.</td>
