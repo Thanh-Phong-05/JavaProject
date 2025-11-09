@@ -2,7 +2,6 @@ package uth.edu.vn.ccmarket.model;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -11,16 +10,17 @@ public class EVOwner {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true) // tránh trùng tên đăng nhập
+
+    @Column(unique = true)
     private String username;
     private String password;
-    private String email; // mục đích để xác minh hoặc tạo mk mới
+    private String email;
 
-    double cashBalance = 0.0; // tiền mặt sau khi bán tín chỉ cacbon
-    double creditBalance = 0.0; // tín chỉ đổi từ CO2 tiết kiệm
-
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL) // 1 chủ xe - nhiều chuyến
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     private List<Trip> trips = new ArrayList<>();
+    // thêm ví mới tạo
+    @OneToOne(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Wallet wallet;
 
     public EVOwner() {
     }
@@ -63,50 +63,11 @@ public class EVOwner {
         this.email = email;
     }
 
-    public double getCashBalance() {
-        return cashBalance;
+    public Wallet getWallet() {
+        return wallet;
     }
 
-    public void setCashBalance(double cashBalance) {
-        this.cashBalance = cashBalance;
+    public void setWallet(Wallet wallet) {
+        this.wallet = wallet;
     }
-
-    public double getCreditBalance() {
-        return creditBalance;
-    }
-
-    public void setCreditBalance(double creditBalance) {
-        this.creditBalance = creditBalance;
-    }
-
-    public void depositCredits(double q) {
-        if (q > 0)
-            this.creditBalance += q;
-    }
-
-    public boolean withdrawCredits(double q) {
-        if (q <= 0)
-            return false;
-        if (q <= this.creditBalance) {
-            this.creditBalance -= q;
-            return true;
-        }
-        return false;
-    }
-
-    public void depositCash(double v) {
-        if (v > 0)
-            this.cashBalance += v;
-    }
-
-    public boolean withdrawCash(double v) {
-        if (v <= 0)
-            return false;
-        if (v <= this.cashBalance) {
-            this.cashBalance -= v;
-            return true;
-        }
-        return false;
-    }
-
 }
