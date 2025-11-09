@@ -7,14 +7,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import uth.edu.vn.ccmarket.model.CCBuyer;
+import uth.edu.vn.ccmarket.repository.CCBuyerRepository;
 
 @Controller
 public class AuthController {
     private final EVOwnerRepository repo;
+    private final CCBuyerRepository buyerRepo;
     private final BCryptPasswordEncoder encoder;
 
-    public AuthController(EVOwnerRepository repo, BCryptPasswordEncoder encoder) {
+    public AuthController(EVOwnerRepository repo, CCBuyerRepository buyerRepo, BCryptPasswordEncoder encoder) {
         this.repo = repo;
+        this.buyerRepo = buyerRepo;
         this.encoder = encoder;
     }
 
