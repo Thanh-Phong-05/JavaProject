@@ -1,23 +1,27 @@
 package uth.edu.vn.ccmarket.controller;
 
-import uth.edu.vn.ccmarket.model.Wallet;
+import uth.edu.vn.ccmarket.model.CCBuyer;
+import uth.edu.vn.ccmarket.repository.CCBuyerRepository;
+
 import uth.edu.vn.ccmarket.model.EVOwner;
+import uth.edu.vn.ccmarket.model.Wallet;
 import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import uth.edu.vn.ccmarket.model.CCBuyer;
-import uth.edu.vn.ccmarket.repository.CCBuyerRepository;
 
 @Controller
 public class AuthController {
-    private final EVOwnerRepository repo;
+
+    private final EVOwnerRepository ownerRepo;
     private final CCBuyerRepository buyerRepo;
     private final BCryptPasswordEncoder encoder;
 
-    public AuthController(EVOwnerRepository repo, CCBuyerRepository buyerRepo, BCryptPasswordEncoder encoder) {
-        this.repo = repo;
+    public AuthController(EVOwnerRepository ownerRepo,
+            CCBuyerRepository buyerRepo,
+            BCryptPasswordEncoder encoder) {
+        this.ownerRepo = ownerRepo;
         this.buyerRepo = buyerRepo;
         this.encoder = encoder;
     }
@@ -31,11 +35,31 @@ public class AuthController {
     @PostMapping("/register")
     public String doRegister(@ModelAttribute EVOwner user) {
         user.setPassword(encoder.encode(user.getPassword()));
-        // cho user mới một cái ví
-        Wallet newWallet = new Wallet(); // ví mới
-        newWallet.setOwner(user); // chủ ví
-        user.setWallet(newWallet); // ví cho chủ xe
-        repo.save(user);
+
+        Wallet newWallet = new Wallet();
+        newWallet.setOwner(user);
+        user.setWallet(newWallet);
+
+        ownerRepo.save(user);
+        return "redirect:/login";
+    }
+
+    @GetMapping("/register-buyer")
+    public String registerBuyerForm(Model m) {
+        m.addAttribute("buyer", new CCBuyer());
+        return "register-buyer"; // Trả về file HTML
+    }
+
+    @PostMapping("/register-buyer")
+    public String doRegisterBuyer(@ModelAttribute CCBuyer buyer) {
+        buyer.setPassword(encoder.encode(buyer.getPassword()));
+
+        Wallet newWallet = new Wallet();
+        newWallet.setBuyer(buyer);
+        buyer.setWallet(newWallet);
+
+        buyerRepo.save(buyer);
+
         return "redirect:/login";
     }
 
@@ -43,5 +67,4 @@ public class AuthController {
     public String login() {
         return "login";
     }
-
 }
