@@ -97,7 +97,7 @@ public class TripProcessorService {
         CarbonCredit cc = new CarbonCredit(owner, tonnes);
         cc.setVerified(false);
 
-        owner.depositCredits(tonnes);
+        owner.getWallet().depositCredits(tonnes);
         ownerRepo.save(owner);
 
         return creditRepo.save(cc);
