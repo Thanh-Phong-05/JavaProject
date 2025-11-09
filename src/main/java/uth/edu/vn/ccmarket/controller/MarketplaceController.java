@@ -47,13 +47,13 @@ public class MarketplaceController {
             return "redirect:/dashboard";
         }
 
-        if (owner.getCreditBalance() < quantity) {
+        if (owner.getWallet().getCreditBalance() < quantity) {
             redirectAttributes.addFlashAttribute("message", "Lỗi: Bạn không đủ tín chỉ để bán.");
             return "redirect:/dashboard";
         }
 
         // Trừ tín chỉ khỏi ví
-        boolean success = owner.withdrawCredits(quantity); //
+        boolean success = owner.getWallet().withdrawCredits(quantity); //
 
         if (success) {
             Listing newListing = new Listing(null, owner.getId(), quantity, price);
