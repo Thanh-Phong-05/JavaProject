@@ -47,17 +47,17 @@ public class TransactionService {
         }
 
         double totalPrice = listing.getPricePerCredit() * quantity;
-        if (buyer.getCashBalance() < totalPrice) {
+        if (buyer.getWallet().getCashBalance() < totalPrice) {// lấy tiền từ ví
             throw new RuntimeException("Bạn không đủ tiền (Cần " + totalPrice + " VND).");
         }
 
         // gd trừ tiền người mua
-        buyer.withdrawCash(totalPrice);
+        buyer.getWallet().withdrawCash(totalPrice);
         // cộng tín chỉ cho người mua
-        buyer.depositCredits(quantity);
+        buyer.getWallet().depositCredits(quantity);
 
         // cộng tiền cho người bán
-        seller.depositCash(totalPrice);
+        seller.getWallet().depositCash(totalPrice);
 
         // cập nhật lại rao bán (trừ số lượng)
         listing.setQuantity(listing.getQuantity() - quantity);
