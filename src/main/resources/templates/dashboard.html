@@ -52,11 +52,11 @@
                     <h2>Ví của bạn</h2>
                     <h4>
                         Số dư tín chỉ (Credits):
-                        <strong th:text="${#numbers.formatDecimal(owner.creditBalance, 1, 2)}">0.00</strong> CC
+                        <strong th:text="${#numbers.formatDecimal(owner.wallet.creditBalance, 1, 2)}">0.00</strong> CC
                     </h4>
                     <p class="mb-0">
                         Số dư tiền mặt (Cash):
-                        <strong th:text="${#numbers.formatCurrency(owner.cashBalance)}">0</strong> VND
+                        <strong th:text="${#numbers.formatCurrency(owner.wallet.cashBalance)}">0</strong> VND
                     </p>
                 </div>
                 <div class="card card-body mb-3">
