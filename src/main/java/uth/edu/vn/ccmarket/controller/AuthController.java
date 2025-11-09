@@ -1,5 +1,6 @@
 package uth.edu.vn.ccmarket.controller;
 
+import uth.edu.vn.ccmarket.model.Wallet;
 import uth.edu.vn.ccmarket.model.EVOwner;
 import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,6 +27,10 @@ public class AuthController {
     @PostMapping("/register")
     public String doRegister(@ModelAttribute EVOwner user) {
         user.setPassword(encoder.encode(user.getPassword()));
+        // cho user mới một cái ví
+        Wallet newWallet = new Wallet(); // ví mới
+        newWallet.setOwner(user); // chủ ví
+        user.setWallet(newWallet); // ví cho chủ xe
         repo.save(user);
         return "redirect:/login";
     }
