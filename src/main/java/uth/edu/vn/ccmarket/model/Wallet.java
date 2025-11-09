@@ -11,13 +11,16 @@ public class Wallet {
 
     private double cashBalance = 0.0;
     private double creditBalance = 0.0;
-
-    // quan hệ 1-1 với chủ sở hữu ví
+    // ví cho chủ xe
     @OneToOne
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id", nullable = true)
     private EVOwner owner;
+    // ví cho người mua
+    @OneToOne
+    @JoinColumn(name = "buyer_id", nullable = true)
+    private CCBuyer buyer;
 
-    // các hàm liên quan đến việc nạp/rút tiền
+    // giao dịch tín chỉ
     public void depositCredits(double q) {
         if (q > 0)
             this.creditBalance += q;
@@ -75,11 +78,21 @@ public class Wallet {
         this.creditBalance = creditBalance;
     }
 
+    // Get/Set chủ xe
     public EVOwner getOwner() {
         return owner;
     }
 
     public void setOwner(EVOwner owner) {
         this.owner = owner;
+    }
+
+    // Get/Set người mua
+    public CCBuyer getBuyer() {
+        return buyer;
+    }
+
+    public void setBuyer(CCBuyer buyer) {
+        this.buyer = buyer;
     }
 }
