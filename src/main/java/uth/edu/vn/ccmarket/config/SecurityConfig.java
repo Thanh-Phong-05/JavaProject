@@ -17,16 +17,30 @@ public class SecurityConfig {
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/", "/css/**", "/js/**", "/register", "/login",
-                                                                "/marketplace",
-                                                                "/h2-console/**")
+                                                // công khai
+                                                .requestMatchers("/", "/css/**", "/js/**",
+                                                                "/register", "/register-buyer", // <-- Thêm mới
+                                                                "/login", "/marketplace", "/h2-console/**")
                                                 .permitAll()
+
+                                                // chỉ cho chủ xe
+                                                .requestMatchers("/dashboard/**", "/trips/**", "/listings/create")
+                                                .hasRole("EV_OWNER") // (hasRole sẽ tự thêm "ROLE_")
+
+                                                // chỉ cho người mua
+                                                .requestMatchers("/buy").hasAnyRole("EV_OWNER", "CC_BUYER")
+
+                                                // của admin
+                                                .requestMatchers("/cva/**", "/admin/**").denyAll()
+
+                                                // tất cả yêu cầu khác cần xác thực
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
                                                 .loginPage("/login").defaultSuccessUrl("/dashboard", true))
                                 .logout(logout -> logout.logoutSuccessUrl("/").permitAll());
 
-                http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+                http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/trips/upload")); // (Nên thêm
+                                                                                                    // /trips/upload)
                 http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
                 return http.build();
         }
