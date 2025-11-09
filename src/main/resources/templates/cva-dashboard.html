@@ -3,47 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <title>CVA Dashboard - Duyệt Tín Chỉ</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f2f2f2; }
-    </style>
+    <th:block th:insert="~{fragments :: head}" />
 </head>
 <body>
-    <h1>Cổng Xác minh Tín chỉ (CVA)</h1>
-    <p>Đây là danh sách các tín chỉ đang chờ được duyệt.</p>
 
-    <div th:if="${message}" th:text="${message}" 
-         style="color: green; font-weight: bold; margin: 10px 0;">
-    </div>
+    <div th:replace="~{fragments :: navbar}"></div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Credit ID</th>
-                <th>Owner ID</th>
-                <th>Số lượng (tấn CO2)</th>
-                <th>Ngày phát hành</th>
-                <th>Hành động (Duyệt)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="credit : ${credits}">
-                <td th:text="${credit.id}">1</td>
-                <td th:text="${credit.owner.id}">100</td> <td th:text="${credit.quantity}">50.0</td>
-                <td th:text="${credit.issuedAt}">2025-01-01</td>
-                <td>
-                    <form th:action="@{/cva/approve/{id}(id=${credit.id})}" method="POST">
-                        <button type="submit">Duyệt</button>
-                    </form>
-                </td>
-            </tr>
-            <tr th:if="${credits.isEmpty()}">
-                <td colspan="5" style="text-align: center;">Không có tín chỉ nào đang chờ duyệt.</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="container mt-4">
+        <h1>Cổng Xác minh Tín chỉ (CVA)</h1>
+        <p>Đây là danh sách các tín chỉ đang chờ được duyệt.</p>
 
+        <div th:if="${message}" th:text="${message}"
+             class="alert alert-success">
+        </div>
+
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Credit ID</th>
+                    <th>Owner ID</th>
+                    <th>Số lượng (tấn CO2)</th>
+                    <th>Ngày phát hành</th>
+                    <th>Hành động (Duyệt)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="credit : ${credits}">
+                    <td th:text="${credit.id}">1</td>
+                    <td th:text="${credit.owner.id}">100</td>
+                    <td th:text="${credit.quantity}">50.0</td>
+                    <td th:text="${credit.issuedAt}">2025-01-01</td>
+                    <td>
+                        <form th:action="@{/cva/approve/{id}(id=${credit.id})}" method="POST">
+                            <button type="submit" class="btn btn-primary btn-sm">Duyệt</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${credits.isEmpty()}">
+                    <td colspan="5" class="text-center">Không có tín chỉ nào đang chờ duyệt.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div> <div th:replace="~{fragments :: footer-scripts}"></div>
 </body>
 </html>
