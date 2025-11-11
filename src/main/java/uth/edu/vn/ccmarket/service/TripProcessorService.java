@@ -8,18 +8,26 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import uth.edu.vn.ccmarket.model.*;
-import uth.edu.vn.ccmarket.repository.*;
+import uth.edu.vn.ccmarket.model.CarbonCredit;
+import uth.edu.vn.ccmarket.model.EVOwner;
+import uth.edu.vn.ccmarket.model.Trip;
+import uth.edu.vn.ccmarket.repository.CarbonCreditRepository;
+import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
+import uth.edu.vn.ccmarket.repository.TripRepository;
 
 @Service
 public class TripProcessorService {
 
-    // Giả định tiết kiệm CO2 so với ICE: 0.25 - 0.05 = 0.20 kg/km
-    private static final double SAVED_KG_PER_KM = 0.20; // kg CO2/km
-    private static final double KG_PER_TONNE = 1000.0; // 1 credit = 1 1000kg CO2e (demo)
+    // GIỮ: 1 credit = 1 1000kg CO2e (demo ban đầu của bạn)
+    private static final double KG_PER_TONNE = 1000.0;
+
+    // ĐỔI: từ hằng số sang cấu hình (gram CO2/km tiết kiệm)
+    @Value("${app.carbon.gram_per_km_saving:120}")
+    private double savedGramPerKm;
 
     private final TripRepository tripRepo;
     private final CarbonCreditRepository creditRepo;
@@ -32,9 +40,7 @@ public class TripProcessorService {
         this.ownerRepo = ownerRepo;
     }
 
-    /**
-     * (GIỮ NGUYÊN) Phần code xử lý CSV rất tốt của bạn bạn
-     */
+    /** parse CSV (giữ nguyên logic của bạn, chỉ refactor nhẹ) */
     @Transactional
     public List<Trip> parseTripsCsv(InputStream csvInput, EVOwner owner) throws IOException {
         List<Trip> trips = new ArrayList<>();
@@ -44,10 +50,8 @@ public class TripProcessorService {
             boolean first = true;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty())
-                    continue;
+                if (line.isEmpty()) continue;
 
-                // Bỏ qua header: dòng đầu mà không bắt đầu bằng số
                 if (first) {
                     first = false;
                     if (!startsWithDigit(line)) {
@@ -57,37 +61,28 @@ public class TripProcessorService {
                 }
 
                 String[] parts = line.split(",");
-                if (parts.length == 0)
-                    continue;
+                if (parts.length == 0) continue;
 
-                // Chuẩn hóa & validate
-                for (int i = 0; i < parts.length; i++)
-                    parts[i] = parts[i].trim();
-                // Cố gắng đọc theo 2 format
+                for (int i = 0; i < parts.length; i++) parts[i] = parts[i].trim();
+
                 Trip t = parseRowFlexible(parts, owner);
-                if (t == null) {
-                    // throw new IllegalArgumentException("CSV row invalid: " + line);
-                    continue;
-                }
-                // Validate distance
-                if (t.getDistanceKm() < 0)
-                    continue;
+                if (t == null) continue;
+                if (t.getDistanceKm() < 0) continue;
 
                 trips.add(t);
             }
         }
 
-        if (trips.isEmpty()) {
-            return List.of();
-        }
+        if (trips.isEmpty()) return List.of();
         return tripRepo.saveAll(trips);
     }
 
     @Transactional
     public CarbonCredit createCreditFromTrips(EVOwner owner, List<Trip> trips) {
-
         double totalKm = trips.stream().mapToDouble(Trip::getDistanceKm).sum();
-        double savedKg = totalKm * SAVED_KG_PER_KM;
+
+        // gram -> kg
+        double savedKg = (totalKm * savedGramPerKm) / 1000.0;
         double tonnes = savedKg / KG_PER_TONNE;
 
         if (tonnes <= 0) {
@@ -104,8 +99,7 @@ public class TripProcessorService {
     }
 
     private static boolean startsWithDigit(String s) {
-        if (s == null || s.isEmpty())
-            return false;
+        if (s == null || s.isEmpty()) return false;
         char c = s.charAt(0);
         return c >= '0' && c <= '9';
     }
@@ -147,18 +141,13 @@ public class TripProcessorService {
     }
 
     private static boolean looksLikeDate(String s) {
-        // rất đơn giản: yyyy-mm-dd
         return s != null && s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-';
     }
 
     private static double parseDoubleSafe(String s) {
-        if (s == null || s.isBlank())
-            return 0.0;
-        try {
-            return Double.parseDouble(s);
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
+        if (s == null || s.isBlank()) return 0.0;
+        try { return Double.parseDouble(s); }
+        catch (NumberFormatException e) { return 0.0; }
     }
 
     private static double parseOptionalDouble(String[] parts, int idx) {
