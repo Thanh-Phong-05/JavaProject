@@ -10,52 +10,57 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 @Configuration
 public class SecurityConfig {
-        @Bean
-        public BCryptPasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
 
-        // đieu phoi dang nhap
-        @Bean
-        public AuthenticationSuccessHandler customAuthenticationSuccessHandler() {
-                return (request, response, authentication) -> {
-                        var authorities = authentication.getAuthorities();
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-                        if (authorities.contains(new SimpleGrantedAuthority("ROLE_CC_BUYER"))) {
-                                // ng mua ve marketplace
-                                response.sendRedirect("/marketplace");
-                        } else if (authorities.contains(new SimpleGrantedAuthority("ROLE_EV_OWNER"))) {
-                                // chu xe ve dashboard
-                                response.sendRedirect("/dashboard");
-                        } else {
-                                // về trang chủ
-                                response.sendRedirect("/");
-                        }
-                };
-        }
+    // điều phối sau đăng nhập
+    @Bean
+    public AuthenticationSuccessHandler customAuthenticationSuccessHandler() {
+        return (request, response, authentication) -> {
+            var authorities = authentication.getAuthorities();
 
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http,
-                        AuthenticationSuccessHandler successHandler) throws Exception {
-                http
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/", "/css/**", "/js/**",
-                                                                "/register", "/register-buyer",
-                                                                "/login", "/marketplace", "/h2-console/**")
-                                                .permitAll()
-                                                .requestMatchers("/dashboard/**", "/trips/**", "/listings/create")
-                                                .hasRole("EV_OWNER")
-                                                .requestMatchers("/buy").hasAnyRole("EV_OWNER", "CC_BUYER")
-                                                .requestMatchers("/cva/**", "/admin/**").denyAll()
-                                                .anyRequest().authenticated())
-                                .formLogin(form -> form
-                                                .loginPage("/login")
+            if (authorities.contains(new SimpleGrantedAuthority("ROLE_CC_BUYER"))) {
+                response.sendRedirect("/marketplace"); // người mua về marketplace
+            } else if (authorities.contains(new SimpleGrantedAuthority("ROLE_EV_OWNER"))) {
+                response.sendRedirect("/dashboard");   // chủ xe về dashboard
+            } else {
+                response.sendRedirect("/");            // về trang chủ
+            }
+        };
+    }
 
-                                                .successHandler(successHandler))
-                                .logout(logout -> logout.logoutSuccessUrl("/").permitAll());
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           AuthenticationSuccessHandler successHandler) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/css/**", "/js/**",
+                        "/register", "/register-buyer",
+                        "/login", "/marketplace", "/h2-console/**",
+                        "/market/ai/suggest"                  // <-- cho AI suggest public
+                ).permitAll()
+                .requestMatchers("/dashboard/**", "/trips/**", "/listings/create")
+                    .hasRole("EV_OWNER")
+                .requestMatchers("/buy")
+                    .hasAnyRole("EV_OWNER", "CC_BUYER")
+                .requestMatchers("/transactions/*/certificate")
+                    .authenticated()                         // <-- tải certificate cần đăng nhập
+                .requestMatchers("/cva/**", "/admin/**")
+                    .denyAll()
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .successHandler(successHandler)
+                .permitAll()
+            )
+            .logout(logout -> logout.logoutSuccessUrl("/").permitAll());
 
-                http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/trips/upload"));
-                http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
-                return http.build();
-        }
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/trips/upload"));
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+        return http.build();
+    }
 }
