@@ -1,0 +1,5 @@
+app:
+  ai:
+    suggest-sample-size: 50
+  carbon:
+    gram_per_km_saving: 120
