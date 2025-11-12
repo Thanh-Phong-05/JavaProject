@@ -16,7 +16,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // điều phối sau đăng nhập
+
     @Bean
     public AuthenticationSuccessHandler customAuthenticationSuccessHandler() {
         return (request, response, authentication) -> {
@@ -26,8 +26,12 @@ public class SecurityConfig {
                 response.sendRedirect("/marketplace"); // người mua về marketplace
             } else if (authorities.contains(new SimpleGrantedAuthority("ROLE_EV_OWNER"))) {
                 response.sendRedirect("/dashboard");   // chủ xe về dashboard
+            } else if (authorities.contains(new SimpleGrantedAuthority("ROLE_CVA"))) {
+                response.sendRedirect("/cva/requests"); // CVA về trang quản lý yêu cầu kiểm định
+            } else if (authorities.contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+                response.sendRedirect("/admin");        // admin dashboard
             } else {
-                response.sendRedirect("/");            // về trang chủ
+                response.sendRedirect("/");             // mặc định về home
             }
         };
     }
@@ -37,19 +41,34 @@ public class SecurityConfig {
                                            AuthenticationSuccessHandler successHandler) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
+                // public endpoints
                 .requestMatchers("/", "/css/**", "/js/**",
                         "/register", "/register-buyer",
                         "/login", "/marketplace", "/h2-console/**",
-                        "/market/ai/suggest"                  // <-- cho AI suggest public
+                        "/market/ai/suggest"
                 ).permitAll()
-                .requestMatchers("/dashboard/**", "/trips/**", "/listings/create")
+
+                // EV Owner pages/APIs
+                .requestMatchers("/dashboard/**", "/trips/**", "/listings/create", "/owner/**")
                     .hasRole("EV_OWNER")
+
+                // Buyer + Owner có thể mua
                 .requestMatchers("/buy")
                     .hasAnyRole("EV_OWNER", "CC_BUYER")
+
+                // CVA zone
+                .requestMatchers("/cva/**")
+                    .hasRole("CVA")
+
+                // Admin zone
+                .requestMatchers("/admin/**")
+                    .hasRole("ADMIN")
+
+                // tải certificate cần login
                 .requestMatchers("/transactions/*/certificate")
-                    .authenticated()                         // <-- tải certificate cần đăng nhập
-                .requestMatchers("/cva/**", "/admin/**")
-                    .denyAll()
+                    .authenticated()
+
+                // tất cả phần còn lại yêu cầu login
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -59,6 +78,7 @@ public class SecurityConfig {
             )
             .logout(logout -> logout.logoutSuccessUrl("/").permitAll());
 
+        // cấu hình CSRF và frame cho H2
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/trips/upload"));
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();
