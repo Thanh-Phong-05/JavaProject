@@ -141,6 +141,35 @@
             </table>
         </div>
 
+        <h3 class="mt-4">Lịch sử Bán Tín chỉ</h3>
+        <div class="table-responsive mb-5">
+            <table class="table table-striped table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Mã GD</th>
+                        <th>Ngày giao dịch</th>
+                        <th>Số lượng (tấn)</th>
+                        <th>Tổng thu (VND)</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="tx : ${transactions}">
+                        <td th:text="${'TX-' + tx.id}">TX-101</td>
+                        <td th:text="${#temporals.format(tx.createdAt, 'dd-MM-yyyy HH:mm')}">01-01-2025</td>
+                        <td th:text="${tx.quantity}">10.0</td>
+                        <td th:text="${#numbers.formatCurrency(tx.totalPrice)}" class="text-success fw-bold">1,000,000</td>
+                        <td>
+                            <span class="badge bg-success">HOÀN TẤT</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${transactions == null or transactions.isEmpty()}">
+                        <td colspan="5" class="text-center text-muted">Chưa có giao dịch bán nào.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
     <div th:replace="~{fragments :: footer-scripts}"></div>
