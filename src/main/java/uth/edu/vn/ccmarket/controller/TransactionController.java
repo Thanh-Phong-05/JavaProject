@@ -32,10 +32,10 @@ public class TransactionController {
     private final CertificateService certificateService;
 
     public TransactionController(TransactionService transactionService,
-                                 EVOwnerRepository ownerRepo,
-                                 CCBuyerRepository buyerRepo,
-                                 TransactionRepository transactionRepository,
-                                 CertificateService certificateService) {
+            EVOwnerRepository ownerRepo,
+            CCBuyerRepository buyerRepo,
+            TransactionRepository transactionRepository,
+            CertificateService certificateService) {
         this.transactionService = transactionService;
         this.ownerRepo = ownerRepo;
         this.buyerRepo = buyerRepo;
@@ -87,7 +87,7 @@ public class TransactionController {
         var tx = transactionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
 
-        // Bắt buộc đăng nhập đã được SecurityConfig kiểm soát; 
+        // Bắt buộc đăng nhập đã được SecurityConfig kiểm soát;
         // Ở đây kiểm tra thêm: nếu đọc được buyer/seller thì chỉ cho chính họ tải
         if (principal != null) {
             String username = principal.getName();
@@ -95,7 +95,8 @@ public class TransactionController {
             String sellerU = partyUsername(getValue(tx, "getSeller"));
             if (buyerU != null || sellerU != null) {
                 boolean isParty = username.equals(buyerU) || username.equals(sellerU);
-                if (!isParty) return ResponseEntity.status(403).build();
+                if (!isParty)
+                    return ResponseEntity.status(403).build();
             }
         }
 
@@ -116,7 +117,8 @@ public class TransactionController {
     // --- reflection helpers ---
 
     private Object getValue(Object target, String method) {
-        if (target == null) return null;
+        if (target == null)
+            return null;
         try {
             Method m = target.getClass().getMethod(method);
             m.setAccessible(true);
@@ -127,11 +129,44 @@ public class TransactionController {
     }
 
     private String partyUsername(Object party) {
-        if (party == null) return null;
+        if (party == null)
+            return null;
         Object u = getValue(party, "getUsername");
-        if (u != null) return String.valueOf(u);
+        if (u != null)
+            return String.valueOf(u);
         Object email = getValue(party, "getEmail");
-        if (email != null) return String.valueOf(email);
+        if (email != null)
+            return String.valueOf(email);
         return null;
+    }
+
+    @PostMapping("/wallet/withdraw") // rút tiền từ ví chủ xe về tk ngân hàng
+    public String withdrawFunds(Principal principal, RedirectAttributes redirectAttributes) {
+        if (principal == null)
+            return "redirect:/login";
+
+        var ownerOpt = ownerRepo.findByUsername(principal.getName());
+        if (ownerOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("message", "Lỗi: Không tìm thấy ví.");
+            return "redirect:/dashboard";
+        }
+        EVOwner owner = ownerOpt.get();
+
+        // tra số dư
+        double currentBalance = owner.getWallet().getCashBalance();
+        if (currentBalance <= 0) {
+            redirectAttributes.addFlashAttribute("message", "Lỗi: Số dư bằng 0, không thể rút.");
+            return "redirect:/dashboard";
+        }
+
+        // rút tiền
+        owner.getWallet().withdrawCash(currentBalance);
+        ownerRepo.save(owner); // Lưu lại số dư mới (0đ)
+
+        // thông báo giả lập
+        redirectAttributes.addFlashAttribute("message",
+                "Đã rút thành công " + String.format("%,.0f", currentBalance) + " VND về tài khoản ngân hàng!");
+
+        return "redirect:/dashboard";
     }
 }
