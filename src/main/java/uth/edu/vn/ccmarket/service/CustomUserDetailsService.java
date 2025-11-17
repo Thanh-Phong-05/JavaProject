@@ -1,10 +1,11 @@
 package uth.edu.vn.ccmarket.service;
 
+import uth.edu.vn.ccmarket.model.Admin;
 import uth.edu.vn.ccmarket.model.CCBuyer;
 import uth.edu.vn.ccmarket.model.EVOwner;
 import uth.edu.vn.ccmarket.repository.CCBuyerRepository;
 import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
-
+import uth.edu.vn.ccmarket.repository.AdminRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,10 +21,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final EVOwnerRepository evOwnerRepository;
     private final CCBuyerRepository buyerRepository; // check ng mua
+    private final AdminRepository adminRepository;
 
-    public CustomUserDetailsService(EVOwnerRepository evOwnerRepository, CCBuyerRepository buyerRepository) {
+    public CustomUserDetailsService(EVOwnerRepository evOwnerRepository, CCBuyerRepository buyerRepository,
+            AdminRepository adminRepository) {
         this.evOwnerRepository = evOwnerRepository;
         this.buyerRepository = buyerRepository;
+        this.adminRepository = adminRepository;
     }
 
     @Override
@@ -49,6 +53,12 @@ public class CustomUserDetailsService implements UserDetailsService {
                     buyer.getUsername(),
                     buyer.getPassword(),
                     Collections.singletonList(new SimpleGrantedAuthority("ROLE_CC_BUYER")));
+        }
+        // check admin
+        Optional<Admin> adminOpt = adminRepository.findByUsername(username);
+        if (adminOpt.isPresent()) {
+            return new User(adminOpt.get().getUsername(), adminOpt.get().getPassword(),
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
         }
 
         throw new UsernameNotFoundException("Không tìm thấy người dùng (trong cả EVOwner và CCBuyer): " + username);
