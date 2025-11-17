@@ -46,4 +46,9 @@ public class AdminController {
         return "admin-dashboard";
     }
 
+    @GetMapping
+    public String redirectToDashboard() {
+        return "redirect:/admin/dashboard";
+    }
+
 }
