@@ -6,6 +6,7 @@ import uth.edu.vn.ccmarket.model.Trip;
 import uth.edu.vn.ccmarket.repository.CarbonCreditRepository;
 import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
 import uth.edu.vn.ccmarket.repository.TripRepository;
+import uth.edu.vn.ccmarket.repository.TransactionRepository;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,19 +16,23 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 
+import uth.edu.vn.ccmarket.model.Transaction;
+
 @Controller
 public class DashboardController {
 
     private final EVOwnerRepository ownerRepo;
     private final TripRepository tripRepo;
     private final CarbonCreditRepository creditRepo;
+    private final TransactionRepository transactionRepo;
 
     public DashboardController(EVOwnerRepository ownerRepo,
             TripRepository tripRepo,
-            CarbonCreditRepository creditRepo) {
+            CarbonCreditRepository creditRepo, TransactionRepository transactionRepo) {
         this.ownerRepo = ownerRepo;
         this.tripRepo = tripRepo;
         this.creditRepo = creditRepo;
+        this.transactionRepo = transactionRepo;
     }
 
     // Menu
@@ -43,7 +48,7 @@ public class DashboardController {
 
         List<Trip> trips = tripRepo.findByOwnerId(owner.getId());
         List<CarbonCredit> credits = creditRepo.findByOwnerId(owner.getId());
-
+        List<Transaction> transactions = transactionRepo.findBySellerId(owner.getId());
         double totalDistance = trips.stream()
                 .mapToDouble(Trip::getDistanceKm)
                 .sum();
@@ -54,7 +59,7 @@ public class DashboardController {
         model.addAttribute("credits", credits);
         model.addAttribute("totalDistance", totalDistance);
         model.addAttribute("totalCO2Saved", totalCO2Saved);
-
+        model.addAttribute("transactions", transactions);
         return "dashboard";
     }
 }
