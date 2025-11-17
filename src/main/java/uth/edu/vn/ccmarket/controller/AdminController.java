@@ -6,7 +6,10 @@ import uth.edu.vn.ccmarket.model.Transaction;
 import uth.edu.vn.ccmarket.repository.EVOwnerRepository;
 import uth.edu.vn.ccmarket.repository.ListingRepository;
 import uth.edu.vn.ccmarket.repository.TransactionRepository;
-
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +51,27 @@ public class AdminController {
 
     @GetMapping
     public String redirectToDashboard() {
+        return "redirect:/admin/dashboard";
+    }
+
+    @PostMapping("/users/{id}/deposit") // nạp tiền cho user để test
+    public String depositToUser(@PathVariable Long id,
+            @RequestParam("amount") double amount,
+            RedirectAttributes redirectAttributes) {
+        try {
+            EVOwner owner = ownerRepo.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy User ID: " + id));
+
+            owner.getWallet().depositCash(amount);
+
+            ownerRepo.save(owner);
+
+            redirectAttributes.addFlashAttribute("message",
+                    "Đã nạp thành công " + String.format("%,.0f", amount) + " VND cho user: " + owner.getUsername());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "Lỗi: " + e.getMessage());
+        }
+
         return "redirect:/admin/dashboard";
     }
 
